@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo List</title>
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #667eea;
+      --accent-dark: #5a6fd6;
+      --surface: #fff;
+      --text: #333;
+      --muted: #999;
+      --border: #eee;
+      --radius: 12px;
+      --shadow: 0 20px 60px rgba(0,0,0,0.18);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      color: var(--text);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) center/cover fixed;
+      transition: background 0.4s ease;
+    }
+
+    body.lang-fa {
+      font-family: Vazir, Tahoma, sans-serif;
+      direction: rtl;
+    }
+
+    body.lang-fa .jalali-date { direction: rtl; }
+
+    .page {
+      min-height: 100vh;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      padding: 0.65rem 1rem;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .toolbar label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .toolbar select, .toolbar button, .toolbar input[type="color"] {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.8125rem;
+      background: #fff;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .toolbar button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .bg-swatches {
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    .bg-swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px #ccc;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .bg-swatch:hover { transform: scale(1.1); }
+    .bg-swatch.active { box-shadow: 0 0 0 2px var(--accent); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 1rem;
+      flex: 1;
+    }
+
+    @media (max-width: 700px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .sidebar, .app-card, .inspiration-panel {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 1rem;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .category-list { list-style: none; padding: 0.5rem; }
+
+    .category-list li button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.65rem;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-family: inherit;
+      text-align: inherit;
+      color: var(--text);
+      transition: background 0.15s;
+    }
+
+    .category-list li button:hover { background: #f5f5f5; }
+    .category-list li button.active { background: #eef1ff; color: var(--accent); font-weight: 600; }
+
+    .cat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .cat-count {
+      margin-inline-start: auto;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: #f0f0f0;
+      padding: 0.1rem 0.45rem;
+      border-radius: 10px;
+    }
+
+    .add-category {
+      display: flex;
+      gap: 0.35rem;
+      padding: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .add-category input {
+      flex: 1;
+      padding: 0.4rem 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      font-family: inherit;
+    }
+
+    .add-category button {
+      padding: 0.4rem 0.55rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8125rem;
+      font-family: inherit;
+    }
+
+    .header {
+      background: var(--accent);
+      color: #fff;
+      padding: 1.25rem 1.5rem;
+      text-align: center;
+    }
+
+    .header h1 { font-size: 1.4rem; font-weight: 600; }
+    .header p { font-size: 0.85rem; opacity: 0.9; margin-top: 0.3rem; }
+
+    .add-form {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .add-form-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .add-form input[type="text"],
+    .add-form input[type="date"],
+    .add-form select {
+      padding: 0.55rem 0.75rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 0.9375rem;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .add-form input[type="text"] { flex: 1; min-width: 140px; }
+    .add-form input:focus, .add-form select:focus { border-color: var(--accent); }
+
+    .add-form button[type="submit"] {
+      padding: 0.55rem 1.1rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .add-form button[type="submit"]:hover { background: var(--accent-dark); }
+
+    .optional-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .filters {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .filters button {
+      flex: 1;
+      padding: 0.35rem;
+      background: transparent;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: #666;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .filters button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .drag-hint {
+      font-size: 0.72rem;
+      color: #bbb;
+      text-align: center;
+      padding: 0.35rem;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    .todo-list { list-style: none; max-height: 380px; overflow-y: auto; }
+
+    .group-header {
+      padding: 0.5rem 1.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      background: #fafafa;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .todo-list li.todo-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.8rem 1.25rem;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.15s, transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      user-select: none;
+    }
+
+    .todo-list li.todo-item:hover { background: #fafafa; }
+    .todo-list li.dragging { opacity: 0.45; transform: scale(0.98); }
+    .todo-list li.drag-over { background: #eef1ff; box-shadow: inset 0 -3px 0 var(--accent); }
+
+    .todo-list li.just-completed {
+      animation: completePulse 0.65s ease;
+      background: linear-gradient(90deg, #f0fff4, #fff, #f0fff4);
+    }
+
+    @keyframes completePulse {
+      0%   { transform: scale(1); }
+      25%  { transform: scale(1.02); box-shadow: 0 0 0 4px rgba(102,126,234,0.25); }
+      60%  { transform: scale(1); box-shadow: 0 0 20px rgba(46,204,113,0.35); }
+      100% { transform: scale(1); box-shadow: none; }
+    }
+
+    .todo-list li.completed .todo-text {
+      text-decoration: line-through;
+      color: #aaa;
+      animation: strikeIn 0.4s ease forwards;
+    }
+
+    @keyframes strikeIn { from { color: #333; } to { color: #aaa; } }
+
+    .drag-handle {
+      color: #ccc;
+      cursor: grab;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .drag-handle:hover { color: var(--accent); }
+    .todo-list li:not(.draggable) .drag-handle { visibility: hidden; pointer-events: none; }
+
+    .todo-content { flex: 1; min-width: 0; }
+
+    .todo-text { font-size: 0.9rem; word-break: break-word; display: block; }
+
+    .todo-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.25rem;
+      align-items: center;
+    }
+
+    .todo-meta span {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .todo-meta .due-date { padding: 0.1rem 0.4rem; border-radius: 4px; background: #f0f4ff; }
+    .todo-meta .due-date.overdue { background: #ffeaea; color: #e74c3c; }
+    .todo-meta .cat-badge {
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 0.65rem;
+    }
+
+    .todo-list input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .todo-list li.just-completed input[type="checkbox"] {
+      animation: checkPop 0.45s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    @keyframes checkPop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #ccc;
+      font-size: 1.25rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .delete-btn:hover { color: #e74c3c; }
+
+    .empty-state {
+      padding: 2rem 1.25rem;
+      text-align: center;
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.7rem 1.25rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+
+    .footer button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .footer button:hover { color: #e74c3c; }
+
+    /* Inspiration panel */
+    .inspiration-panel { padding: 1.25rem; }
+
+    .inspiration-panel h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .inspiration-panel > p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .inspiration-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .inspiration-card {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .inspiration-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .inspiration-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .inspiration-card .card-body {
+      padding: 0.65rem 0.75rem;
+    }
+
+    .inspiration-card h3 { font-size: 0.85rem; margin-bottom: 0.2rem; }
+    .inspiration-card p { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+
+    .confetti-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      overflow: hidden;
+    }
+
+    .confetti {
+      position: absolute;
+      animation: confettiFly var(--duration) ease-out forwards;
+    }
+
+    @keyframes confettiFly {
+      0%   { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx),var(--ty)) rotate(var(--rot)) scale(0.3); opacity: 0; }
+    }
+
+    .check-ring {
+      position: fixed;
+      width: 36px;
+      height: 36px;
+      border: 2px solid #2ecc71;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: ringExpand 0.6s ease-out forwards;
+      z-index: 9998;
+    }
+
+    @keyframes ringExpand {
+      0%   { transform: scale(0.3); opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    .hidden { display: none !important; }
+
+    #bg-upload { display: none; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <label data-i18n="language">Language</label>
+        <button id="lang-en" class="active">EN</button>
+        <button id="lang-fa">FA</button>
+      </div>
+      <div class="toolbar-group">
+        <label data-i18n="background">Background</label>
+        <div class="bg-swatches" id="bg-swatches"></div>
+        <input type="color" id="bg-color" value="#667eea" title="Custom color">
+        <button id="bg-upload-btn" data-i18n="upload">Upload</button>
+        <input type="file" id="bg-upload" accept="image/*">
+      </div>
+      <div class="toolbar-group">
+        <button id="toggle-inspiration" data-i18n="inspiration">Inspiration</button>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <aside class="sidebar">
+        <div class="sidebar-header" data-i18n="categories">Categories</div>
+        <ul class="category-list" id="category-list"></ul>
+        <div class="add-category">
+          <input type="text" id="new-category" data-i18n-placeholder="newCategory">
+          <button id="add-category-btn" data-i18n="add">Add</button>
+        </div>
+      </aside>
+
+      <div class="app-card">
+        <div class="header">
+          <h1 data-i18n="title">My Todos</h1>
+          <p id="date" class="jalali-date"></p>
+        </div>
+
+        <form class="add-form" id="add-form">
+          <div class="add-form-row">
+            <input type="text" id="todo-input" data-i18n-placeholder="placeholder" autocomplete="off" autofocus>
+            <button type="submit" data-i18n="add">Add</button>
+          </div>
+          <div class="add-form-row">
+            <select id="todo-category"></select>
+            <div>
+              <input type="date" id="todo-due">
+              <span class="optional-label" data-i18n="dueOptional">Due date (optional)</span>
+            </div>
+          </div>
+        </form>
+
+        <div class="filters">
+          <button class="active" data-filter="all" data-i18n="all">All</button>
+          <button data-filter="active" data-i18n="active">Active</button>
+          <button data-filter="completed" data-i18n="completed">Completed</button>
+        </div>
+
+        <p class="drag-hint hidden" id="drag-hint" data-i18n="dragHint">Drag tasks to reorder</p>
+        <ul class="todo-list" id="todo-list"></ul>
+
+        <div class="footer hidden" id="footer">
+          <span id="item-count"></span>
+          <button id="clear-completed" data-i18n="clearCompleted">Clear completed</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="inspiration-panel hidden" id="inspiration-panel">
+      <h2 data-i18n="inspirationTitle">Design Inspiration</h2>
+      <p data-i18n="inspirationDesc">Popular todo apps to inspire your style. Click a card to apply its background.</p>
+      <div class="inspiration-grid" id="inspiration-grid"></div>
+    </section>
+  </div>
+
+  <div class="confetti-container" id="confetti-container"></div>
+
+  <script>
+    const APP_KEY = 'todo-app-v2';
+
+    const i18n = {
+      en: {
+        language: 'Language', background: 'Background', upload: 'Upload',
+        inspiration: 'Inspiration', categories: 'Categories', newCategory: 'New category',
+        add: 'Add', title: 'My Todos', placeholder: 'What needs to be done?',
+        dueOptional: 'Due date (optional)', all: 'All', active: 'Active', completed: 'Completed',
+        dragHint: 'Drag tasks to reorder', clearCompleted: 'Clear completed',
+        inspirationTitle: 'Design Inspiration',
+        inspirationDesc: 'Popular todo apps to inspire your style. Click a card to apply its background.',
+        noTodos: 'No todos yet. Add one above!',
+        noActive: 'No active todos.', noCompleted: 'No completed todos.',
+        itemsLeft: n => `${n} item${n !== 1 ? 's' : ''} left`,
+        created: 'Created', due: 'Due', overdue: 'Overdue',
+        inbox: 'Inbox', work: 'Work', personal: 'Personal', allCats: 'All categories'
+      },
+      fa: {
+        language: 'زبان', background: 'پس‌زمینه', upload: 'آپلود',
+        inspiration: 'الهام', categories: 'دسته‌بندی‌ها', newCategory: 'دسته جدید',
+        add: 'افزودن', title: 'کارهای من', placeholder: 'چه کاری باید انجام شود؟',
+        dueOptional: 'مهلت (اختیاری)', all: 'همه', active: 'فعال', completed: 'انجام‌شده',
+        dragHint: 'برای مرتب‌سازی بکشید', clearCompleted: 'پاک کردن انجام‌شده‌ها',
+        inspirationTitle: 'الهام طراحی',
+        inspirationDesc: 'اپ‌های محبوب برای الهام گرفتن. روی کارت کلیک کنید تا پس‌زمینه اعمال شود.',
+        noTodos: 'هنوز کاری اضافه نشده!', noActive: 'کار فعالی نیست.', noCompleted: 'کار انجام‌شده‌ای نیست.',
+        itemsLeft: n => `${n} کار باقی‌مانده`,
+        created: 'ایجاد', due: 'مهلت', overdue: 'عقب‌افتاده',
+        inbox: 'صندوق ورودی', work: 'کار', personal: 'شخصی', allCats: 'همه دسته‌ها'
+      }
+    };
+
+    const BG_PRESETS = [
+      { id: 'purple', style: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+      { id: 'mstodo', style: 'linear-gradient(160deg, #0078d4 0%, #00bcf2 50%, #7fba00 100%)' },
+      { id: 'sunset', style: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+      { id: 'forest', image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80' },
+      { id: 'mountain', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' },
+      { id: 'minimal', style: '#f0f2f5' },
+      { id: 'dark', style: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' }
+    ];
+
+    const INSPIRATION = [
+      {
+        name: 'Microsoft To Do',
+        desc: { en: 'Clean blue gradients, soft cards, minimal UI', fa: 'گرادیان آبی، کارت‌های نرم، رابط مینیمال' },
+        image: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=600&q=80',
+        bg: 'linear-gradient(160deg, #0078d4 0%, #00bcf2 50%, #7fba00 100%)'
+      },
+      {
+        name: 'Todoist',
+        desc: { en: 'Bold red accent, focused task lists', fa: 'رنگ قرمز برجسته، لیست‌های متمرکز' },
+        image: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=600&q=80',
+        bg: 'linear-gradient(135deg, #e44332 0%, #ff6b5b 100%)'
+      },
+      {
+        name: 'Things 3',
+        desc: { en: 'Elegant blue tones, beautiful typography', fa: 'آبی ظریف، تایپوگرافی زیبا' },
+        image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&q=80',
+        bg: 'linear-gradient(135deg, #4a90d9 0%, #67b8f5 100%)'
+      },
+      {
+        name: 'Google Tasks',
+        desc: { en: 'Simple and light, material design feel', fa: 'ساده و روشن، حس متریال دیزاین' },
+        image: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&q=80',
+        bg: 'linear-gradient(135deg, #f8f9fa 0%, #e8eaed 100%)'
+      },
+      {
+        name: 'Nature Calm',
+        desc: { en: 'Peaceful outdoor scenery backgrounds', fa: 'منظره آرامش‌بخش طبیعت' },
+        image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&q=80',
+        bg: 'url(https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80) center/cover fixed'
+      },
+      {
+        name: 'Mountain Vista',
+        desc: { en: 'Majestic peaks, inspiring productivity', fa: 'قله‌های باشکوه، الهام‌بخش' },
+        image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80',
+        bg: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80) center/cover fixed'
+      }
+    ];
+
+    const DEFAULT_CATEGORIES = [
+      { id: 'inbox', color: '#667eea', nameKey: 'inbox' },
+      { id: 'work', color: '#e74c3c', nameKey: 'work' },
+      { id: 'personal', color: '#2ecc71', nameKey: 'personal' }
+    ];
+
+    function loadApp() {
+      const saved = JSON.parse(localStorage.getItem(APP_KEY) || 'null');
+      if (saved) return saved;
+
+      const oldTodos = JSON.parse(localStorage.getItem('todos') || '[]');
+      return {
+        todos: oldTodos.map(t => ({
+          ...t,
+          createdAt: t.createdAt || new Date(t.id).toISOString(),
+          categoryId: t.categoryId || 'inbox',
+          dueDate: t.dueDate || null
+        })),
+        categories: DEFAULT_CATEGORIES,
+        settings: { lang: 'en', background: 'purple', customBg: null }
+      };
+    }
+
+    let app = loadApp();
+    let { todos, categories, settings } = app;
+    let filter = 'all';
+    let selectedCategory = 'all';
+    let dragId = null;
+
+    const jalaliLong = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const jalaliShort = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+    const enLong = new Intl.DateTimeFormat('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const enShort = new Intl.DateTimeFormat('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+
+    const t = key => {
+      const val = i18n[settings.lang][key];
+      return typeof val === 'function' ? val : val;
+    };
+
+    function save() {
+      app.todos = todos;
+      app.categories = categories;
+      app.settings = settings;
+      localStorage.setItem(APP_KEY, JSON.stringify(app));
+    }
+
+    function catName(cat) {
+      if (cat.nameKey) return t(cat.nameKey);
+      return cat.name || cat.id;
+    }
+
+    function formatDate(iso, short = true) {
+      if (!iso) return '';
+      const d = new Date(iso.includes('T') ? iso : iso + 'T00:00:00');
+      if (settings.lang === 'fa') return short ? jalaliShort.format(d) : jalaliLong.format(d);
+      return short ? enShort.format(d) : enLong.format(d);
+    }
+
+    function applyBackground() {
+      if (settings.customBg) {
+        document.body.style.background = `url(${settings.customBg}) center/cover fixed`;
+        return;
+      }
+      const preset = BG_PRESETS.find(p => p.id === settings.background);
+      if (preset?.image) {
+        document.body.style.background = `url(${preset.image}) center/cover fixed`;
+      } else if (preset?.style) {
+        document.body.style.background = preset.style;
+      } else if (settings.background.includes('url(') || settings.background.includes('gradient') || settings.background.startsWith('#')) {
+        document.body.style.background = settings.background;
+      } else {
+        document.body.style.background = `url(${settings.background}) center/cover fixed`;
+      }
+    }
+
+    function applyLang() {
+      document.documentElement.lang = settings.lang;
+      document.body.classList.toggle('lang-fa', settings.lang === 'fa');
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = t(el.dataset.i18nPlaceholder);
+      });
+      document.getElementById('lang-en').classList.toggle('active', settings.lang === 'en');
+      document.getElementById('lang-fa').classList.toggle('active', settings.lang === 'fa');
+      document.getElementById('date').textContent = settings.lang === 'fa'
+        ? jalaliLong.format(new Date())
+        : enLong.format(new Date());
+    }
+
+    function renderBgSwatches() {
+      const container = document.getElementById('bg-swatches');
+      container.innerHTML = '';
+      BG_PRESETS.forEach(p => {
+        const sw = document.createElement('button');
+        sw.className = 'bg-swatch' + (settings.background === p.id && !settings.customBg ? ' active' : '');
+        sw.title = p.id;
+        sw.style.background = p.image ? `url(${p.image}) center/cover` : p.style;
+        sw.addEventListener('click', () => {
+          settings.background = p.id;
+          settings.customBg = null;
+          save();
+          applyBackground();
+          renderBgSwatches();
+        });
+        container.appendChild(sw);
+      });
+    }
+
+    function renderInspiration() {
+      const grid = document.getElementById('inspiration-grid');
+      grid.innerHTML = INSPIRATION.map(item => `
+        <div class="inspiration-card" data-bg="${escapeAttr(item.bg)}">
+          <img src="${item.image}" alt="${escapeAttr(item.name)}" loading="lazy">
+          <div class="card-body">
+            <h3>${escapeHtml(item.name)}</h3>
+            <p>${escapeHtml(item.desc[settings.lang])}</p>
+          </div>
+        </div>
+      `).join('');
+
+      grid.querySelectorAll('.inspiration-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const bg = card.dataset.bg;
+          settings.customBg = null;
+          if (bg.startsWith('url') || bg.startsWith('linear') || bg.startsWith('#')) {
+            settings.background = bg;
+          }
+          save();
+          applyBackground();
+          renderBgSwatches();
+        });
+      });
+    }
+
+    function renderCategories() {
+      const list = document.getElementById('category-list');
+      const allCount = todos.length;
+
+      let html = `<li><button class="${selectedCategory === 'all' ? 'active' : ''}" data-cat="all">
+        <span class="cat-dot" style="background:#999"></span>
+        ${t('allCats')}
+        <span class="cat-count">${allCount}</span>
+      </button></li>`;
+
+      categories.forEach(cat => {
+        const count = todos.filter(todo => todo.categoryId === cat.id).length;
+        html += `<li><button class="${selectedCategory === cat.id ? 'active' : ''}" data-cat="${cat.id}">
+          <span class="cat-dot" style="background:${cat.color}"></span>
+          ${escapeHtml(catName(cat))}
+          <span class="cat-count">${count}</span>
+        </button></li>`;
+      });
+
+      list.innerHTML = html;
+      list.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedCategory = btn.dataset.cat;
+          render();
+        });
+      });
+
+      const catSelect = document.getElementById('todo-category');
+      catSelect.innerHTML = categories.map(cat =>
+        `<option value="${cat.id}">${escapeHtml(catName(cat))}</option>`
+      ).join('');
+    }
+
+    function getFilteredTodos() {
+      let result = todos;
+      if (selectedCategory !== 'all') result = result.filter(t => t.categoryId === selectedCategory);
+      if (filter === 'active') result = result.filter(t => !t.completed);
+      if (filter === 'completed') result = result.filter(t => t.completed);
+      return result;
+    }
+
+    function spawnConfetti(rect) {
+      const colors = ['#667eea','#764ba2','#2ecc71','#f39c12','#e74c3c','#1abc9c'];
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const container = document.getElementById('confetti-container');
+
+      for (let i = 0; i < 28; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti';
+        const angle = (Math.PI * 2 * i) / 28 + Math.random() * 0.5;
+        const dist = 60 + Math.random() * 90;
+        p.style.cssText = `
+          left:${cx}px; top:${cy}px;
+          width:${5 + Math.random() * 6}px; height:${5 + Math.random() * 6}px;
+          background:${colors[i % colors.length]};
+          border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+          --tx:${Math.cos(angle) * dist}px; --ty:${Math.sin(angle) * dist - 40}px;
+          --rot:${Math.random() * 720 - 360}deg; --duration:${600 + Math.random() * 400}ms;
+        `;
+        container.appendChild(p);
+        setTimeout(() => p.remove(), 1100);
+      }
+    }
+
+    function spawnCheckRing(checkbox) {
+      const rect = checkbox.getBoundingClientRect();
+      const ring = document.createElement('div');
+      ring.className = 'check-ring';
+      ring.style.left = `${rect.left + rect.width / 2 - 18}px`;
+      ring.style.top = `${rect.top + rect.height / 2 - 18}px`;
+      document.body.appendChild(ring);
+      setTimeout(() => ring.remove(), 650);
+    }
+
+    function createTodoItem(todo) {
+      const li = document.createElement('li');
+      li.className = 'todo-item' + (todo.completed ? ' completed' : '');
+      li.dataset.id = todo.id;
+
+      const cat = categories.find(c => c.id === todo.categoryId);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const isOverdue = todo.dueDate && !todo.completed && new Date(todo.dueDate + 'T00:00:00') < today;
+
+      let dueHtml = '';
+      if (todo.dueDate) {
+        dueHtml = `<span class="due-date${isOverdue ? ' overdue' : ''}">${t('due')}: ${formatDate(todo.dueDate)}${isOverdue ? ' (' + t('overdue') + ')' : ''}</span>`;
+      }
+
+      li.innerHTML = `
+        <span class="drag-handle" title="drag">⠿</span>
+        <input type="checkbox" ${todo.completed ? 'checked' : ''}>
+        <div class="todo-content">
+          <span class="todo-text">${escapeHtml(todo.text)}</span>
+          <div class="todo-meta jalali-date">
+            <span>${t('created')}: ${formatDate(todo.createdAt)}</span>
+            ${dueHtml}
+            ${cat ? `<span class="cat-badge" style="background:${cat.color}">${escapeHtml(catName(cat))}</span>` : ''}
+          </div>
+        </div>
+        <button class="delete-btn">&times;</button>
+      `;
+
+      const checkbox = li.querySelector('input');
+      checkbox.addEventListener('change', () => toggleTodo(todo.id, checkbox, li));
+      li.querySelector('.delete-btn').addEventListener('click', () => deleteTodo(todo.id));
+      setupDragAndDrop(li, todo);
+      return li;
+    }
+
+    function setupDragAndDrop(li, todo) {
+      const canDrag = filter === 'all' && selectedCategory !== 'all' ? false : filter === 'all';
+      li.classList.toggle('draggable', canDrag);
+      li.draggable = canDrag;
+      if (!canDrag) return;
+
+      li.addEventListener('dragstart', e => {
+        dragId = todo.id;
+        li.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      li.addEventListener('dragend', () => {
+        dragId = null;
+        li.classList.remove('dragging');
+        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      });
+      li.addEventListener('dragover', e => { e.preventDefault(); });
+      li.addEventListener('dragenter', e => {
+        e.preventDefault();
+        if (todo.id !== dragId) li.classList.add('drag-over');
+      });
+      li.addEventListener('dragleave', e => {
+        if (!li.contains(e.relatedTarget)) li.classList.remove('drag-over');
+      });
+      li.addEventListener('drop', e => {
+        e.preventDefault();
+        li.classList.remove('drag-over');
+        if (!dragId || dragId === todo.id) return;
+        const fromIdx = todos.findIndex(t => t.id === dragId);
+        const toIdx = todos.findIndex(t => t.id === todo.id);
+        if (fromIdx < 0 || toIdx < 0) return;
+        const [moved] = todos.splice(fromIdx, 1);
+        todos.splice(toIdx, 0, moved);
+        save();
+        render();
+      });
+    }
+
+    function render() {
+      applyLang();
+      renderCategories();
+      renderInspiration();
+
+      const filtered = getFilteredTodos();
+      const activeCount = todos.filter(t => !t.completed).length;
+      const todoList = document.getElementById('todo-list');
+      const dragHint = document.getElementById('drag-hint');
+      const footer = document.getElementById('footer');
+
+      todoList.innerHTML = '';
+      dragHint.classList.toggle('hidden', filter !== 'all' || todos.length < 2);
+
+      if (filtered.length === 0) {
+        const msg = filter === 'all' ? t('noTodos') : filter === 'active' ? t('noActive') : t('noCompleted');
+        todoList.innerHTML = `<li class="empty-state">${msg}</li>`;
+      } else if (selectedCategory === 'all' && filter === 'all') {
+        const grouped = {};
+        filtered.forEach(todo => {
+          const cid = todo.categoryId || 'inbox';
+          if (!grouped[cid]) grouped[cid] = [];
+          grouped[cid].push(todo);
+        });
+        categories.forEach(cat => {
+          if (!grouped[cat.id]?.length) return;
+          const header = document.createElement('li');
+          header.className = 'group-header';
+          header.innerHTML = `<span class="cat-dot" style="background:${cat.color}"></span>${escapeHtml(catName(cat))}`;
+          todoList.appendChild(header);
+          grouped[cat.id].forEach(todo => todoList.appendChild(createTodoItem(todo)));
+        });
+        Object.keys(grouped).forEach(cid => {
+          if (categories.find(c => c.id === cid)) return;
+          grouped[cid].forEach(todo => todoList.appendChild(createTodoItem(todo)));
+        });
+      } else {
+        filtered.forEach(todo => todoList.appendChild(createTodoItem(todo)));
+      }
+
+      footer.classList.toggle('hidden', todos.length === 0);
+      document.getElementById('item-count').textContent = i18n[settings.lang].itemsLeft(activeCount);
+      document.getElementById('clear-completed').classList.toggle('hidden', !todos.some(t => t.completed));
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    function escapeAttr(text) {
+      return text.replace(/"/g, '&quot;');
+    }
+
+    function addTodo(text, categoryId, dueDate) {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      todos.push({
+        id: Date.now(),
+        text: trimmed,
+        completed: false,
+        createdAt: new Date().toISOString(),
+        categoryId: categoryId || 'inbox',
+        dueDate: dueDate || null
+      });
+      save();
+      render();
+    }
+
+    function toggleTodo(id, checkbox, li) {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+      const was = todo.completed;
+      todo.completed = checkbox.checked;
+      if (todo.completed && !was) {
+        li.classList.add('just-completed');
+        spawnCheckRing(checkbox);
+        spawnConfetti(checkbox.getBoundingClientRect());
+        setTimeout(() => { li.classList.remove('just-completed'); save(); }, 650);
+      } else {
+        save();
+      }
+      li.classList.toggle('completed', todo.completed);
+    }
+
+    function deleteTodo(id) {
+      todos = todos.filter(t => t.id !== id);
+      save();
+      render();
+    }
+
+    // Events
+    document.getElementById('add-form').addEventListener('submit', e => {
+      e.preventDefault();
+      addTodo(
+        document.getElementById('todo-input').value,
+        document.getElementById('todo-category').value,
+        document.getElementById('todo-due').value || null
+      );
+      document.getElementById('todo-input').value = '';
+      document.getElementById('todo-due').value = '';
+    });
+
+    document.querySelectorAll('.filters button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filter = btn.dataset.filter;
+        render();
+      });
+    });
+
+    document.getElementById('clear-completed').addEventListener('click', () => {
+      todos = todos.filter(t => !t.completed);
+      save();
+      render();
+    });
+
+    document.getElementById('lang-en').addEventListener('click', () => {
+      settings.lang = 'en'; save(); render();
+    });
+    document.getElementById('lang-fa').addEventListener('click', () => {
+      settings.lang = 'fa'; save(); render();
+    });
+
+    document.getElementById('bg-color').addEventListener('input', e => {
+      settings.background = e.target.value;
+      settings.customBg = null;
+      save(); applyBackground(); renderBgSwatches();
+    });
+
+    document.getElementById('bg-upload-btn').addEventListener('click', () => {
+      document.getElementById('bg-upload').click();
+    });
+
+    document.getElementById('bg-upload').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        settings.customBg = ev.target.result;
+        settings.background = 'custom';
+        save(); applyBackground(); renderBgSwatches();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('toggle-inspiration').addEventListener('click', () => {
+      document.getElementById('inspiration-panel').classList.toggle('hidden');
+    });
+
+    document.getElementById('add-category-btn').addEventListener('click', () => {
+      const input = document.getElementById('new-category');
+      const name = input.value.trim();
+      if (!name) return;
+      const colors = ['#9b59b6','#3498db','#e67e22','#1abc9c','#f39c12'];
+      categories.push({
+        id: 'cat-' + Date.now(),
+        name,
+        color: colors[categories.length % colors.length]
+      });
+      input.value = '';
+      save();
+      render();
+    });
+
+    renderBgSwatches();
+    applyBackground();
+    render();
+  </script>
+</body>
+</html>
